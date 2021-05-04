@@ -1,4 +1,4 @@
-# Wave 7: Deployment
+# Optional Deployment
 
 ## Goal
 
