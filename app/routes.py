@@ -1,6 +1,7 @@
 from app import db
 from app.models.task import Task
 from flask import request, Blueprint, make_response, jsonify
+from datetime import datetime
 
 tasks_bp = Blueprint("tasks", __name__, url_prefix="/tasks")
 
@@ -77,8 +78,22 @@ def handle_task(task_id):
         return make_response(jsonify(task_response), 200)
 
 @tasks_bp.route("/<task_id>/mark_complete", methods=["PATCH"])
-def handle_task_new(task_id):
+def handle_complete(task_id):
     task = Task.query.get(task_id)
     if task is None:
         return make_response("No such path exists", 404)
-    
+
+    task.completed_at = datetime.utcnow()
+    db.session.commit() 
+    return make_response(jsonify(task_data_structure(task)), 200)
+
+@tasks_bp.route("/<task_id>/mark_incomplete", methods=["PATCH"])
+def handle_incomplete(task_id):
+    task = Task.query.get(task_id)
+    if task is None:
+        return make_response("No such path exists", 404)
+
+    task.completed_at = None
+    db.session.commit() 
+
+    return make_response(jsonify(task_data_structure(task)), 200)
