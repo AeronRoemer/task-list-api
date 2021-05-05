@@ -1,10 +1,13 @@
 from app import db
 from app.models.task import Task
 from flask import request, Blueprint, make_response, jsonify
-from datetime import datetime
+
+
 
 tasks_bp = Blueprint("tasks", __name__, url_prefix="/tasks")
+# waiting to refactor until complete
 
+# helper function to create often used data structure in responses
 def task_data_structure(task):
     if task.completed_at:
         task.is_complete = True
@@ -20,6 +23,7 @@ def task_data_structure(task):
             }}
 
     return task_data_structure
+
 
 @tasks_bp.route("", methods=["GET", "POST"])
 def handle_tasks():
@@ -52,6 +56,7 @@ def handle_tasks():
         else:
             return make_response(jsonify({"details":"Invalid data"}), 400)
 
+
 @tasks_bp.route("/<task_id>", methods=["GET", "PUT", "DELETE"])
 def handle_task(task_id):
     task = Task.query.get(task_id)
@@ -77,15 +82,17 @@ def handle_task(task_id):
         task_response = {"details": f'Task {task.task_id} "{task.title}" successfully deleted'}
         return make_response(jsonify(task_response), 200)
 
+
 @tasks_bp.route("/<task_id>/mark_complete", methods=["PATCH"])
 def handle_complete(task_id):
     task = Task.query.get(task_id)
     if task is None:
         return make_response("No such path exists", 404)
 
-    task.completed_at = datetime.utcnow()
+    task.update_completed()
     db.session.commit() 
     return make_response(jsonify(task_data_structure(task)), 200)
+
 
 @tasks_bp.route("/<task_id>/mark_incomplete", methods=["PATCH"])
 def handle_incomplete(task_id):
