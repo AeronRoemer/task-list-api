@@ -3,6 +3,7 @@ from app.models.task import Task
 from flask import request, Blueprint, make_response, jsonify
 
 tasks_bp = Blueprint("tasks", __name__, url_prefix="/tasks")
+
 def task_data_structure(task):
     if task.completed_at:
         task.is_complete = True
@@ -38,10 +39,8 @@ def handle_tasks():
 
     elif request.method == "POST":
         request_body = request.get_json()
-        print(request_body['title'])
-        if request_body['title']:
-            print(request_body['title'])
-        if request_body['title'] and request_body['description'] and (request_body['completed_at'] or request_body['completed_at']==None):
+
+        if 'title' in request_body and 'description' in request_body and 'completed_at' in request_body: 
             new_task = Task(title=request_body["title"],
                         description=request_body["description"],
                         completed_at=request_body['completed_at'])
@@ -76,3 +75,10 @@ def handle_task(task_id):
         db.session.commit() 
         task_response = {"details": f'Task {task.task_id} "{task.title}" successfully deleted'}
         return make_response(jsonify(task_response), 200)
+
+@tasks_bp.route("/<task_id>/mark_complete", methods=["PATCH"])
+def handle_task_new(task_id):
+    task = Task.query.get(task_id)
+    if task is None:
+        return make_response("No such path exists", 404)
+    
