@@ -1,8 +1,8 @@
 from app import db
 from app.models.task import Task
 from flask import request, Blueprint, make_response, jsonify
-
-
+import requests
+import os
 
 tasks_bp = Blueprint("tasks", __name__, url_prefix="/tasks")
 # waiting to refactor until complete
@@ -88,9 +88,21 @@ def handle_complete(task_id):
     task = Task.query.get(task_id)
     if task is None:
         return make_response("No such path exists", 404)
-
-    task.update_completed()
+    
+    task.update_completed() # function in Task Module to Update Time
     db.session.commit() 
+
+    url = f"https://slack.com/api/chat.postMessage?channel=general&text={task.title}"
+    auth_token = os.environ.get("API_KEY")
+
+    headers = {
+    'Authorization': auth_token
+    }
+
+    response = requests.request("POST", url, headers=headers)
+
+    print(response.text)
+
     return make_response(jsonify(task_data_structure(task)), 200)
 
 
