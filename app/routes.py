@@ -1,13 +1,18 @@
 from app import db
 from app.models.task import Task
+from app.models.goal import Goal
 from flask import request, Blueprint, make_response, jsonify
 import requests
 import os
 
+goals_bp = Blueprint("goals", __name__, url_prefix="/goals")
 tasks_bp = Blueprint("tasks", __name__, url_prefix="/tasks")
+
 # waiting to refactor until complete
 
-# helper function to create often used data structure in responses
+####################################################################
+# helper functions to create often used data structure in responses #
+####################################################################
 def task_data_structure(task):
     if task.completed_at:
         task.is_complete = True
@@ -24,6 +29,63 @@ def task_data_structure(task):
 
     return task_data_structure
 
+def goal_data_structure(goal):
+    goal_data_structure = {
+                "goal":{
+                "id":goal.goal_id,
+                "title":goal.title
+            }}
+
+    return goal_data_structure
+
+
+
+####################################################################
+#                              GOALS ROUTES                        #
+####################################################################
+
+@goals_bp.route("", methods=["GET", "POST"])
+def handle_goals():
+    if request.method == "GET":
+        sort_query = request.args.get("sort")
+        if sort_query == "asc": 
+            goals = Goal.query.order_by(goal.title)
+        elif sort_query == "desc":
+            goals = Goal.query.order_by(goal.title.desc())
+        else:
+            goals = Goal.query.all()
+        goals_response = []
+        for goal in goals:
+            goal_formatted = {
+                "id": goal.goal_id,
+                "title": goal.title
+            }
+            goals_response.append(goal_formatted)
+
+        return make_response(jsonify(goals_response), 200)
+    elif request.method == "POST":
+        request_body = request.get_json()
+        if 'title' in request_body: 
+            new_goal = Goal(title=request_body["title"])
+            db.session.add(new_goal)
+            db.session.commit()
+
+            return make_response(goal_data_structure(new_goal), 201)
+        else:
+            return make_response(jsonify({"details":"Invalid data"}), 400)
+
+@goals_bp.route("/<goal_id>", methods=["GET", "PUT", "DELETE"])
+def handle_goal(goal_id):
+    goal = Goal.query.get(goal_id)
+    if goal is None:
+        return make_response("", 404)
+    if request.method == "GET":
+        return make_response(jsonify(goal_data_structure(goal)), 200)
+
+
+####################################################################
+#                              TASK ROUTES                        #
+####################################################################
 
 @tasks_bp.route("", methods=["GET", "POST"])
 def handle_tasks():
