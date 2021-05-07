@@ -32,7 +32,7 @@ def handle_goals():
                 "title": goal.title
             }
             goals_response.append(goal_formatted)
-        return make_response(goals_response, 200)
+        return make_response(jsonify(goals_response), 200)
     elif request.method == "POST":
         request_body = request.get_json()
         # can't use request_body['title'] because of python syntax
@@ -159,4 +159,4 @@ def handle_incomplete(task_id):
         return make_response("No such path exists", 404)
     task.completed_at = None
     db.session.commit() 
-    return make_response(task_data_structure(), 200)
+    return make_response(task.task_data_structure(), 200)
