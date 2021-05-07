@@ -72,7 +72,7 @@ def handle_goals():
 
             return make_response(goal_data_structure(new_goal), 201)
         else:
-            return make_response(jsonify({"details":"Invalid data"}), 400)
+            return make_response({"details":"Invalid data"}, 400)
 
 @goals_bp.route("/<goal_id>", methods=["GET", "PUT", "DELETE"])
 def handle_goal(goal_id):
@@ -80,8 +80,19 @@ def handle_goal(goal_id):
     if goal is None:
         return make_response("", 404)
     if request.method == "GET":
-        return make_response(jsonify(goal_data_structure(goal)), 200)
+        return make_response(goal_data_structure(goal), 200)
+    elif request.method == "PUT":
+        goal_data = request.get_json()
+        goal.title = goal_data["title"]
 
+        db.session.commit()
+        goal = Goal.query.get(goal_id)
+        return make_response(goal_data_structure(goal), 200)
+    elif request.method == "DELETE":
+        db.session.delete(goal)
+        db.session.commit() 
+        goal_response = {"details": f'Goal {goal.goal_id} "{goal.title}" successfully deleted'}
+        return make_response(goal_response, 200)
 
 ####################################################################
 #                              TASK ROUTES                        #
@@ -114,9 +125,9 @@ def handle_tasks():
 
             db.session.add(new_task)
             db.session.commit()
-            return make_response(jsonify(task_data_structure(new_task)), 201)
+            return make_response(task_data_structure(new_task), 201)
         else:
-            return make_response(jsonify({"details":"Invalid data"}), 400)
+            return make_response({"details":"Invalid data"}, 400)
 
 
 @tasks_bp.route("/<task_id>", methods=["GET", "PUT", "DELETE"])
@@ -124,19 +135,17 @@ def handle_task(task_id):
     task = Task.query.get(task_id)
     if task is None:
         return make_response("", 404)
-
     if request.method == "GET":
         return make_response(task_data_structure(task), 200)
     elif request.method == "PUT":
         task_data = request.get_json()
-
         task.title = task_data["title"]
         task.description = task_data["description"]
         task.completed_at = task_data['completed_at']
 
         db.session.commit()
         task = Task.query.get(task_id)
-        return make_response(jsonify(task_data_structure(task)), 200)
+        return make_response(task_data_structure(task), 200)
 
     elif request.method == "DELETE":
         db.session.delete(task)
@@ -162,8 +171,6 @@ def handle_complete(task_id):
     }
 
     response = requests.request("POST", url, headers=headers)
-
-    print(response.text)
 
     return make_response(jsonify(task_data_structure(task)), 200)
 
