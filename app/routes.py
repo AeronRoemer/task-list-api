@@ -18,8 +18,10 @@ def handle_goals():
     if request.method == "GET":
         sort_query = request.args.get("sort")
         if sort_query == "asc": 
+            # Automatically sorts by asc
             goals = Goal.query.order_by(goal.title)
         elif sort_query == "desc":
+            # SQLAlchemy for sort by desc
             goals = Goal.query.order_by(goal.title.desc())
         else:
             goals = Goal.query.all()
@@ -30,14 +32,15 @@ def handle_goals():
                 "title": goal.title
             }
             goals_response.append(goal_formatted)
-
-        return make_response(jsonify(goals_response), 200)
+        return make_response(goals_response, 200)
     elif request.method == "POST":
         request_body = request.get_json()
+        # can't use request_body['title'] because of python syntax
         if 'title' in request_body: 
             new_goal = Goal(title=request_body["title"])
             db.session.add(new_goal)
             db.session.commit()
+            # uses Goal method to return dictionary
             return make_response(new_goal.goal_data_structure(), 201)
         else:
             return make_response({"details":"Invalid data"}, 400)
@@ -53,7 +56,6 @@ def handle_goal(goal_id):
         goal_data = request.get_json()
         goal.title = goal_data["title"]
         db.session.commit()
-        goal = Goal.query.get(goal_id)
         return make_response(goal.goal_data_structure(), 200)
     elif request.method == "DELETE":
         db.session.delete(goal)
@@ -67,6 +69,7 @@ def handle_goal_tasks(goal_id):
     if goal is None:
         return make_response("", 404)
     if request.method == "GET":
+        # Method that appends full task info
         return make_response(goal.tasks_data_structure(), 200)
     if request.method == "POST":
         request_body = request.get_json()
@@ -75,7 +78,6 @@ def handle_goal_tasks(goal_id):
             task.goal_id = goal_id
             db.session.commit()
         return make_response({"id": goal.goal_id, "task_ids": request_body["task_ids"]}, 200)
-
 
 
 ####################################################################
@@ -141,9 +143,11 @@ def handle_complete(task_id):
         return make_response("No such path exists", 404)
     task.update_completed() # function in Task Module to Update Time
     db.session.commit() 
+    # uses Slack API to interact with a slackbot + post to channel
     url = f"https://slack.com/api/chat.postMessage?channel=general&text={task.title}"
     auth_token = os.environ.get("API_KEY")
     headers = {'Authorization': auth_token}
+    # No Payload as text is sent via query string
     response = requests.request("POST", url, headers=headers)
     return make_response(task.task_data_structure(), 200)
 

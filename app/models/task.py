@@ -9,6 +9,7 @@ class Task(db.Model):
     title = db.Column(db.String)
     description = db.Column(db.String)
     completed_at = db.Column(db.DateTime, nullable=True)
+    # establishes 'child' relationship with Goal/s
     goal_id = db.Column(db.Integer, db.ForeignKey('goal.goal_id'), nullable=True)
 
 
@@ -16,11 +17,11 @@ class Task(db.Model):
         self.completed_at = datetime.now()
     
     def task_data_structure(self):
+        # is_complete needed for test waves
         if self.completed_at:
             is_complete = True
         else:
             is_complete = False
-            
         task_data_structure = {
                     "task":{
                     "id":self.task_id,
