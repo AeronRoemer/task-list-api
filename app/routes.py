@@ -67,7 +67,7 @@ def handle_goal_tasks(goal_id):
     if goal is None:
         return make_response("", 404)
     if request.method == "GET":
-        print(goal.tasks)
+        return make_response(goal.tasks_data_structure(), 200)
     if request.method == "POST":
         request_body = request.get_json()
         for task_id in request_body["task_ids"]:

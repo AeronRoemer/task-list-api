@@ -15,3 +15,15 @@ class Goal(db.Model):
                 }}
 
         return goal_data_structure
+
+    def tasks_data_structure(self):
+        tasks = []
+        for task in self.tasks:
+            tasks.append(task.task_data_structure()['task'])
+
+        tasks_data_structure = {
+                    "id":self.goal_id,
+                    "title":self.title,
+                    "tasks": tasks
+                }
+        return tasks_data_structure
