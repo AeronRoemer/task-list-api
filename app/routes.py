@@ -8,37 +8,6 @@ import os
 goals_bp = Blueprint("goals", __name__, url_prefix="/goals")
 tasks_bp = Blueprint("tasks", __name__, url_prefix="/tasks")
 
-# waiting to refactor until complete
-
-####################################################################
-# helper functions to create often used data structure in responses #
-####################################################################
-def task_data_structure(task):
-    if task.completed_at:
-        task.is_complete = True
-    else:
-        task.is_complete = False
-
-    task_data_structure = {
-                "task":{
-                "id":task.task_id,
-                "title":task.title,
-                "description":task.description,
-                "is_complete":task.is_complete
-            }}
-
-    return task_data_structure
-
-def goal_data_structure(goal):
-    goal_data_structure = {
-                "goal":{
-                "id":goal.goal_id,
-                "title":goal.title
-            }}
-
-    return goal_data_structure
-
-
 
 ####################################################################
 #                              GOALS ROUTES                        #
@@ -69,8 +38,7 @@ def handle_goals():
             new_goal = Goal(title=request_body["title"])
             db.session.add(new_goal)
             db.session.commit()
-
-            return make_response(goal_data_structure(new_goal), 201)
+            return make_response(new_goal.goal_data_structure(), 201)
         else:
             return make_response({"details":"Invalid data"}, 400)
 
@@ -80,19 +48,35 @@ def handle_goal(goal_id):
     if goal is None:
         return make_response("", 404)
     if request.method == "GET":
-        return make_response(goal_data_structure(goal), 200)
+        return make_response(goal.goal_data_structure(), 200)
     elif request.method == "PUT":
         goal_data = request.get_json()
         goal.title = goal_data["title"]
-
         db.session.commit()
         goal = Goal.query.get(goal_id)
-        return make_response(goal_data_structure(goal), 200)
+        return make_response(goal.goal_data_structure(), 200)
     elif request.method == "DELETE":
         db.session.delete(goal)
         db.session.commit() 
         goal_response = {"details": f'Goal {goal.goal_id} "{goal.title}" successfully deleted'}
         return make_response(goal_response, 200)
+    
+@goals_bp.route("/<goal_id>/tasks", methods=["GET", "POST"])
+def handle_goal_tasks(goal_id):
+    goal = Goal.query.get(goal_id)
+    if goal is None:
+        return make_response("", 404)
+    if request.method == "GET":
+        print(goal.tasks)
+    if request.method == "POST":
+        request_body = request.get_json()
+        for task_id in request_body["task_ids"]:
+            task = Task.query.get(task_id)
+            task.goal_id = goal_id
+            db.session.commit()
+        return make_response({"id": goal.goal_id, "task_ids": request_body["task_ids"]}, 200)
+
+
 
 ####################################################################
 #                              TASK ROUTES                        #
@@ -110,22 +94,19 @@ def handle_tasks():
             tasks = Task.query.all()
         tasks_response = []
         for task in tasks:
-            task = task_data_structure(task)['task']
-            tasks_response.append(task)
+            tasks_response.append(task.task_data_structure()['task'])
 
         return make_response(jsonify(tasks_response), 200)
 
     elif request.method == "POST":
         request_body = request.get_json()
-
         if 'title' in request_body and 'description' in request_body and 'completed_at' in request_body: 
             new_task = Task(title=request_body["title"],
                         description=request_body["description"],
                         completed_at=request_body['completed_at'])
-
             db.session.add(new_task)
             db.session.commit()
-            return make_response(task_data_structure(new_task), 201)
+            return make_response(new_task.task_data_structure(), 201)
         else:
             return make_response({"details":"Invalid data"}, 400)
 
@@ -136,16 +117,15 @@ def handle_task(task_id):
     if task is None:
         return make_response("", 404)
     if request.method == "GET":
-        return make_response(task_data_structure(task), 200)
+        return make_response(task.task_data_structure(), 200)
     elif request.method == "PUT":
         task_data = request.get_json()
         task.title = task_data["title"]
         task.description = task_data["description"]
         task.completed_at = task_data['completed_at']
-
         db.session.commit()
         task = Task.query.get(task_id)
-        return make_response(task_data_structure(task), 200)
+        return make_response(task.task_data_structure(), 200)
 
     elif request.method == "DELETE":
         db.session.delete(task)
@@ -159,20 +139,13 @@ def handle_complete(task_id):
     task = Task.query.get(task_id)
     if task is None:
         return make_response("No such path exists", 404)
-    
     task.update_completed() # function in Task Module to Update Time
     db.session.commit() 
-
     url = f"https://slack.com/api/chat.postMessage?channel=general&text={task.title}"
     auth_token = os.environ.get("API_KEY")
-
-    headers = {
-    'Authorization': auth_token
-    }
-
+    headers = {'Authorization': auth_token}
     response = requests.request("POST", url, headers=headers)
-
-    return make_response(jsonify(task_data_structure(task)), 200)
+    return make_response(task.task_data_structure(), 200)
 
 
 @tasks_bp.route("/<task_id>/mark_incomplete", methods=["PATCH"])
@@ -180,8 +153,6 @@ def handle_incomplete(task_id):
     task = Task.query.get(task_id)
     if task is None:
         return make_response("No such path exists", 404)
-
     task.completed_at = None
     db.session.commit() 
-
-    return make_response(jsonify(task_data_structure(task)), 200)
+    return make_response(task_data_structure(), 200)
