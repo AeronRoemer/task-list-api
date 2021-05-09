@@ -94,6 +94,7 @@ def handle_tasks():
             tasks = Task.query.order_by(Task.title.desc())
         else:
             tasks = Task.query.all()
+            
         tasks_response = []
         for task in tasks:
             tasks_response.append(task.task_data_structure()['task'])
