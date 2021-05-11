@@ -47,9 +47,7 @@ def handle_goals():
 
 @goals_bp.route("/<goal_id>", methods=["GET", "PUT", "DELETE"])
 def handle_goal(goal_id):
-    goal = Goal.query.get(goal_id)
-    if goal is None:
-        return make_response("", 404)
+    goal = Goal.query.get_or_404(goal_id)
     if request.method == "GET":
         return make_response(goal.goal_data_structure(), 200)
     elif request.method == "PUT":
@@ -65,9 +63,7 @@ def handle_goal(goal_id):
     
 @goals_bp.route("/<goal_id>/tasks", methods=["GET", "POST"])
 def handle_goal_tasks(goal_id):
-    goal = Goal.query.get(goal_id)
-    if goal is None:
-        return make_response("", 404)
+    goal = Goal.query.get_or_404(goal_id)
     if request.method == "GET":
         # Method that appends full task info
         return make_response(goal.tasks_data_structure(), 200)
@@ -116,9 +112,7 @@ def handle_tasks():
 
 @tasks_bp.route("/<task_id>", methods=["GET", "PUT", "DELETE"])
 def handle_task(task_id):
-    task = Task.query.get(task_id)
-    if task is None:
-        return make_response("", 404)
+    task = Task.query.get_or_404(task_id)
     if request.method == "GET":
         return make_response(task.task_data_structure(), 200)
     elif request.method == "PUT":
@@ -139,13 +133,11 @@ def handle_task(task_id):
 
 @tasks_bp.route("/<task_id>/mark_complete", methods=["PATCH"])
 def handle_complete(task_id):
-    task = Task.query.get(task_id)
-    if task is None:
-        return make_response("No such path exists", 404)
+    task = Task.query.get_or_404(task_id)
     task.update_completed() # function in Task Module to Update Time
     db.session.commit() 
     # uses Slack API to interact with a slackbot + post to channel
-    url = f"https://slack.com/api/chat.postMessage?channel=general&text={task.title}"
+    url = f"https://slack.com/api/chat.postMessage?channel=general&text={'Hello Testing'}"
     auth_token = os.environ.get("API_KEY")
     headers = {'Authorization': auth_token}
     # No Payload as text is sent via query string
@@ -155,9 +147,7 @@ def handle_complete(task_id):
 
 @tasks_bp.route("/<task_id>/mark_incomplete", methods=["PATCH"])
 def handle_incomplete(task_id):
-    task = Task.query.get(task_id)
-    if task is None:
-        return make_response("No such path exists", 404)
+    task = Task.query.get_or_404(task_id)
     task.completed_at = None
     db.session.commit() 
     return make_response(task.task_data_structure(), 200)
